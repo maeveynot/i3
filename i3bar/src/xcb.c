@@ -236,19 +236,28 @@ static uint32_t predict_statusline_length(bool use_short_text) {
 /*
  * Redraws the statusline to the output's statusline_buffer
  */
-static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focus_colors, bool use_short_text) {
+static void draw_statusline(i3_output *output, int available_width, bool use_focus_colors, bool use_short_text) {
     struct status_block *block;
 
     color_t bar_color = (use_focus_colors ? colors.focus_bar_bg : colors.bar_bg);
     draw_util_clear_surface(&output->statusline_buffer, bar_color);
 
-    /* Use unsigned integer wraparound to clip off the left side.
-     * For example, if clip_left is 75, then x will start at the very large
-     * number INT_MAX-75, which is way outside the surface dimensions. Drawing
-     * to that x position is a no-op which XCB and Cairo safely ignore. Once x moves
-     * up by 75 and goes past INT_MAX, it will wrap around again to 0, and we start
-     * actually rendering content to the surface. */
-    uint32_t x = 0 - clip_left;
+    uint32_t x = 0;
+    if (available_width < 0) {
+        /* Use unsigned integer wraparound to clip off the left side. For example, if
+         * available_width is -75, meaning we must clip 75 px on the left, then x will
+         * start at the very large number INT_MAX-75, which is way outside the surface
+         * dimensions. Drawing to that x position is a no-op which XCB and Cairo safely
+         * ignore. Once x moves up by 75 and goes past INT_MAX, it will wrap around
+         * again to 0, and we start actually rendering content to the surface. */
+        x += available_width;
+    } else {
+        /* If we have a positive available width, add it to the first block. */
+        block = TAILQ_FIRST(&statusline_head);
+        block->full_render.x_append = available_width;
+        block->short_render.x_append = available_width;
+    }
+    available_width = 0;
 
     /* Draw the text of each block */
     TAILQ_FOREACH (block, &statusline_head, blocks) {
@@ -2068,25 +2077,22 @@ void draw_bars(bool unhide) {
 
             int tray_width = get_tray_width(outputs_walk->trayclients);
             uint32_t hoff = logical_px(((workspace_width > 0) + (tray_width > 0)) * sb_hoff_px);
-            uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - hoff;
-            uint32_t clip_left = 0;
-            uint32_t statusline_width = full_statusline_width;
+            uint32_t statusline_width = outputs_walk->rect.w - workspace_width - tray_width - hoff;
+            int available_width = 0;
+            uint32_t predicted_width = full_statusline_width;
             bool use_short_text = false;
 
-            if (statusline_width > max_statusline_width) {
-                statusline_width = short_statusline_width;
+            if (predicted_width > statusline_width) {
+                predicted_width = short_statusline_width;
                 use_short_text = true;
-                if (statusline_width > max_statusline_width) {
-                    clip_left = statusline_width - max_statusline_width;
-                }
             }
+            available_width = statusline_width - predicted_width;
 
-            int16_t visible_statusline_width = MIN(statusline_width, max_statusline_width);
-            int x_dest = outputs_walk->rect.w - tray_width - logical_px((tray_width > 0) * sb_hoff_px) - visible_statusline_width;
+            int x_dest = workspace_width + hoff / 2;
 
-            draw_statusline(outputs_walk, clip_left, use_focus_colors, use_short_text);
+            draw_statusline(outputs_walk, available_width, use_focus_colors, use_short_text);
             draw_util_copy_surface(&outputs_walk->statusline_buffer, &outputs_walk->buffer, 0, 0,
-                                   x_dest, 0, visible_statusline_width, (int16_t)bar_height);
+                                   x_dest, 0, statusline_width, (int16_t)bar_height);
 
             outputs_walk->statusline_width = statusline_width;
             outputs_walk->statusline_short_text = use_short_text;
