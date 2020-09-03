@@ -304,9 +304,36 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
                                 bar_height - has_border * logical_px(block->border_bottom + block->border_top) - logical_px(2));
         }
 
+        /* Vertically center the text based on this height. */
+        int font_height = font.height;
+        /* If the text contains Pango font size markup, adjust that height. See:
+         *
+         * https://github.com/GNOME/pango/blob/1.46.1/pango/pango-markup.c#L1072
+         * https://github.com/GNOME/pango/blob/1.46.1/pango/pango-markup.c#L227
+         * https://github.com/GNOME/pango/blob/1.46.1/pango/pango-markup.c#L356
+         *
+         * The scale factor for the font size is 1.2, but unfortunately, we have
+         * the entire height, including the spacing, which seems like it does
+         * not get scaled (since we could be mixing different font sizes in the
+         * same layout, I guess). See
+         *
+         * https://developer.gnome.org/pango/stable/pango-Layout-Objects.html#PangoLayout-struct
+         *
+         * for a diagram of ascent + descent + spacing. So, if we attempt to
+         * multiply by 1.2**n, it doesn't come out right. For now, just kludge
+         * it; this method of trying to detect the font size used is horrible
+         * anyway. */
+        const char *text_utf8 = i3string_as_utf8(text);
+        if (strstr(text_utf8, "size='large'"))
+            font_height += 2; // *= 1.2;
+        else if (strstr(text_utf8, "size='x-large'"))
+            font_height += 3; // *= 1.44;
+        else if (strstr(text_utf8, "size='xx-large'"))
+            font_height += 5; // *= 1.728;
+
         draw_util_text(text, &output->statusline_buffer, fg_color, bg_color,
                        x + render->x_offset + has_border * logical_px(block->border_left),
-                       bar_height / 2 - font.height / 2,
+                       bar_height / 2 - font_height / 2,
                        render->width - has_border * logical_px(block->border_left + block->border_right));
         x += full_render_width;
 
