@@ -547,7 +547,7 @@ static void handle_button(xcb_button_press_event_t *event) {
          * statusline by subtracting its width and the width of the tray from
          * the bar width. */
         const int offset_x = walk->rect.w - walk->statusline_width -
-                             tray_width - logical_px((tray_width > 0) * sb_hoff_px);
+                             tray_width - logical_px(sb_hoff_px);
         if (x >= offset_x) {
             /* Click was after the start of the statusline, return to avoid
              * executing any other actions even if a click event is not
@@ -2067,7 +2067,7 @@ void draw_bars(bool unhide) {
             DLOG("Printing statusline!\n");
 
             int tray_width = get_tray_width(outputs_walk->trayclients);
-            uint32_t hoff = logical_px(((workspace_width > 0) + (tray_width > 0)) * sb_hoff_px);
+            uint32_t hoff = logical_px((workspace_width > 0) * sb_hoff_px);
             uint32_t max_statusline_width = outputs_walk->rect.w - workspace_width - tray_width - hoff;
             uint32_t clip_left = 0;
             uint32_t statusline_width = full_statusline_width;
@@ -2082,7 +2082,7 @@ void draw_bars(bool unhide) {
             }
 
             int16_t visible_statusline_width = MIN(statusline_width, max_statusline_width);
-            int x_dest = outputs_walk->rect.w - tray_width - logical_px((tray_width > 0) * sb_hoff_px) - visible_statusline_width;
+            int x_dest = outputs_walk->rect.w - tray_width - logical_px(sb_hoff_px) - visible_statusline_width;
 
             draw_statusline(outputs_walk, clip_left, use_focus_colors, use_short_text);
             draw_util_copy_surface(&outputs_walk->statusline_buffer, &outputs_walk->buffer, 0, 0,
