@@ -106,6 +106,9 @@ struct xcb_colors_t {
 };
 struct xcb_colors_t colors;
 
+/* Thickness of button borders */
+static const int ws_border_px = 1;
+
 /* Horizontal offset between a workspace label and button borders */
 static const int ws_hoff_px = 4;
 
@@ -183,7 +186,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
         /* Draw a custom separator. */
         uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
         draw_util_text(config.separator_symbol, &output->statusline_buffer, sep_fg, bar_bg,
-                       separator_x, logical_px(ws_margin_px + ws_voff_px - 1), x - separator_x);
+                       separator_x, logical_px(ws_margin_px + ws_voff_px - ws_border_px), x - separator_x);
     }
 }
 
@@ -295,16 +298,16 @@ static void draw_statusline(i3_output *output, uint32_t clip_left, bool use_focu
 
             /* Draw the border. */
             draw_util_rectangle(&output->statusline_buffer, border_color,
-                                x, logical_px(1),
+                                x, logical_px(ws_border_px),
                                 full_render_width,
-                                bar_height - logical_px(2));
+                                bar_height - logical_px(2 * ws_border_px));
 
             /* Draw the background. */
             draw_util_rectangle(&output->statusline_buffer, bg_color,
                                 x + has_border * logical_px(block->border_left),
-                                logical_px(1) + has_border * logical_px(block->border_top),
+                                logical_px(ws_border_px) + has_border * logical_px(block->border_top),
                                 full_render_width - has_border * logical_px(block->border_right + block->border_left),
-                                bar_height - has_border * logical_px(block->border_bottom + block->border_top) - logical_px(2));
+                                bar_height - has_border * logical_px(block->border_bottom + block->border_top) - logical_px(2 * ws_border_px));
         }
 
         draw_util_text(text, &output->statusline_buffer, fg_color, bg_color,
@@ -499,7 +502,7 @@ static void child_handle_button(xcb_button_press_event_t *event, i3_output *outp
  *
  */
 static int predict_button_width(int name_width) {
-    return MAX(name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(1),
+    return MAX(name_width + 2 * logical_px(ws_hoff_px) + 2 * logical_px(ws_border_px),
                logical_px(config.ws_min_width));
 }
 
@@ -1358,7 +1361,7 @@ void init_xcb_late(char *fontname) {
     font = load_font(fontname, true);
     set_font(&font);
     DLOG("Calculated font height: %d\n", font.height);
-    bar_height = font.height + 2 * (logical_px(ws_margin_px + ws_voff_px - 1));
+    bar_height = font.height + 2 * (logical_px(ws_margin_px + ws_voff_px - ws_border_px));
     icon_size = bar_height - 2 * logical_px(config.tray_padding);
 
     if (config.separator_symbol)
@@ -1977,17 +1980,19 @@ void reconfig_windows(bool redraw_bars) {
  */
 static void draw_button(surface_t *surface, color_t fg_color, color_t bg_color, color_t border_color,
                         int x, int width, int text_width, i3String *text) {
-    int height = font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1);
+    int height = font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(ws_border_px);
 
     /* Draw the border of the button. */
     draw_util_rectangle(surface, border_color, x, logical_px(ws_margin_px), width, height);
 
     /* Draw the inside of the button. */
-    draw_util_rectangle(surface, bg_color, x + logical_px(1), logical_px(ws_margin_px) + logical_px(1),
-                        width - 2 * logical_px(1), height - 2 * logical_px(1));
+    draw_util_rectangle(surface, bg_color, x + logical_px(ws_border_px),
+                        logical_px(ws_margin_px) + logical_px(ws_border_px),
+                        width - 2 * logical_px(ws_border_px),
+                        height - 2 * logical_px(ws_border_px));
 
     draw_util_text(text, surface, fg_color, bg_color, x + (width - text_width) / 2,
-                   logical_px(ws_margin_px + ws_voff_px - 1), text_width);
+                   logical_px(ws_margin_px + ws_voff_px - ws_border_px), text_width);
 }
 
 /*
