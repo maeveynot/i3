@@ -107,7 +107,7 @@ struct xcb_colors_t {
 struct xcb_colors_t colors;
 
 /* Thickness of button borders */
-static const int ws_border_px = 1;
+static const int ws_border_px = 0;
 
 /* Horizontal offset between a workspace label and button borders */
 static const int ws_hoff_px = 4;
@@ -119,11 +119,11 @@ static const int ws_voff_px = 3;
 static const int ws_spacing_px = 1;
 
 /* Offset between workspace buttons and edges of bar  */
-static const int ws_margin_px = 1;
+static const int ws_margin_px = 6;
 
 /* Offset between the statusline and 1) workspace buttons on the left
  *                                   2) the tray or screen edge on the right */
-static const int sb_hoff_px = 4;
+static const int sb_hoff_px = 9;
 
 /* Additional offset between the tray and the statusline, if the tray is not empty */
 static const int tray_loff_px = 2;
