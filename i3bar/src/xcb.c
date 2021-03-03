@@ -115,6 +115,9 @@ static const int ws_voff_px = 3;
 /* Offset between two workspace buttons */
 static const int ws_spacing_px = 1;
 
+/* Offset between workspace buttons and edges of bar  */
+static const int ws_margin_px = 1;
+
 /* Offset between the statusline and 1) workspace buttons on the left
  *                                   2) the tray or screen edge on the right */
 static const int sb_hoff_px = 4;
@@ -180,7 +183,7 @@ static void draw_separator(i3_output *output, uint32_t x, struct status_block *b
         /* Draw a custom separator. */
         uint32_t separator_x = MAX(x - block->sep_block_width, center_x - separator_symbol_width / 2);
         draw_util_text(config.separator_symbol, &output->statusline_buffer, sep_fg, bar_bg,
-                       separator_x, logical_px(ws_voff_px), x - separator_x);
+                       separator_x, logical_px(ws_margin_px + ws_voff_px - 1), x - separator_x);
     }
 }
 
@@ -1355,7 +1358,7 @@ void init_xcb_late(char *fontname) {
     font = load_font(fontname, true);
     set_font(&font);
     DLOG("Calculated font height: %d\n", font.height);
-    bar_height = font.height + 2 * logical_px(ws_voff_px);
+    bar_height = font.height + 2 * (logical_px(ws_margin_px + ws_voff_px - 1));
     icon_size = bar_height - 2 * logical_px(config.tray_padding);
 
     if (config.separator_symbol)
@@ -1977,14 +1980,14 @@ static void draw_button(surface_t *surface, color_t fg_color, color_t bg_color, 
     int height = font.height + 2 * logical_px(ws_voff_px) - 2 * logical_px(1);
 
     /* Draw the border of the button. */
-    draw_util_rectangle(surface, border_color, x, logical_px(1), width, height);
+    draw_util_rectangle(surface, border_color, x, logical_px(ws_margin_px), width, height);
 
     /* Draw the inside of the button. */
-    draw_util_rectangle(surface, bg_color, x + logical_px(1), 2 * logical_px(1),
+    draw_util_rectangle(surface, bg_color, x + logical_px(1), logical_px(ws_margin_px) + logical_px(1),
                         width - 2 * logical_px(1), height - 2 * logical_px(1));
 
     draw_util_text(text, surface, fg_color, bg_color, x + (width - text_width) / 2,
-                   logical_px(ws_voff_px), text_width);
+                   logical_px(ws_margin_px + ws_voff_px - 1), text_width);
 }
 
 /*
@@ -1999,7 +2002,7 @@ void draw_bars(bool unhide) {
 
     i3_output *outputs_walk;
     SLIST_FOREACH (outputs_walk, outputs, slist) {
-        int workspace_width = 0;
+        int workspace_width = logical_px(ws_margin_px);
 
         if (!outputs_walk->active) {
             DLOG("Output %s inactive, skipping...\n", outputs_walk->name);
